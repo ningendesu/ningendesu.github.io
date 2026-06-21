@@ -21,14 +21,14 @@
     const exportBtn = document.createElement('button');
     exportBtn.className = 'sa-nav-btn'; // 既存のスタイルを流用
     exportBtn.style.cssText = 'flex: 1; background: #FFFDF7; border: 1px solid #D9CBA6; border-radius: 4px; padding: 8px 0; color: #6B6048; font-weight: normal;';
-    exportBtn.innerHTML = '📥 データを保存（保存）';
+    exportBtn.innerHTML = '<⁠(⁠￣⁠︶⁠￣⁠)⁠> データを保存（保存）';
     exportBtn.onclick = exportData;
 
     // 復元（読み込み）ボタン
     const importBtn = document.createElement('button');
     importBtn.className = 'sa-nav-btn';
     importBtn.style.cssText = 'flex: 1; background: #FFFDF7; border: 1px solid #D9CBA6; border-radius: 4px; padding: 8px 0; color: #9B3A34; font-weight: normal;';
-    importBtn.innerHTML = '📤 データを復元（読込）';
+    importBtn.innerHTML = 'ฅ⁠^⁠•⁠ﻌ⁠•⁠^⁠ฅ データを復元（読込）';
     importBtn.onclick = importData;
 
     container.appendChild(exportBtn);
