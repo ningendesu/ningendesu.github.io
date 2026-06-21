@@ -1,7 +1,81 @@
-// --- にゃたし草子専用 拡張スクリプト（バックアップ＆ナイトモード） ---
+// --- にゃたし草子専用 拡張スクリプト（バックアップ＆ナイトモード・カスタム黒ダイアログ完全内蔵版） ---
 (function() {
   const STORAGE_KEY = 'soushi-app-state';
   const NIGHT_MODE_KEY = 'soushi-night-mode';
+
+  // 🎨 ① 通知（閉じるボタンだけ）用のオリジナル黒画面
+  function showCustomAlert(title, message, onClose) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100005; display: flex; align-items: center; justify-content: center; font-family: sans-serif; padding: 20px; box-sizing: border-box;';
+
+    const box = document.createElement('div');
+    box.style.cssText = 'background: #252525; border: 1px solid #3d3d3d; width: 100%; max-width: 320px; border-radius: 8px; padding: 20px; box-sizing: border-box; color: #E3E3E3; box-shadow: 0 4px 20px rgba(0,0,0,0.5);';
+
+    const tEl = document.createElement('div');
+    tEl.innerHTML = title;
+    tEl.style.cssText = 'font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #FFF;';
+    
+    const mEl = document.createElement('div');
+    mEl.innerHTML = message.replace(/\n/g, '<br>');
+    mEl.style.cssText = 'font-size: 14px; color: #B3B3B3; line-height: 1.6; margin-bottom: 20px;';
+
+    const btnContainer = document.createElement('div');
+    btnContainer.style.cssText = 'display: flex; justify-content: flex-end;';
+
+    const okBtn = document.createElement('button');
+    okBtn.innerHTML = '閉じる';
+    okBtn.style.cssText = 'background: none; border: none; color: #3966D6; font-size: 14px; font-weight: bold; cursor: pointer; padding: 8px 12px;';
+    okBtn.onclick = () => {
+      overlay.remove();
+      if (onClose) onClose();
+    };
+
+    btnContainer.appendChild(okBtn);
+    box.appendChild(tEl);
+    box.appendChild(mEl);
+    box.appendChild(btnContainer);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  }
+
+  // 🎨 ② ２択（はい／いいえ）用のオリジナル黒画面
+  function showCustomPrompt(title, message, onConfirm) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100000; display: flex; align-items: center; justify-content: center; font-family: sans-serif; padding: 20px; box-sizing: border-box;';
+
+    const box = document.createElement('div');
+    box.style.cssText = 'background: #252525; border: 1px solid #3d3d3d; width: 100%; max-width: 340px; border-radius: 8px; padding: 20px; box-sizing: border-box; color: #E3E3E3; box-shadow: 0 4px 20px rgba(0,0,0,0.5);';
+
+    const tEl = document.createElement('div');
+    tEl.innerHTML = title;
+    tEl.style.cssText = 'font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #FFF;';
+    
+    const mEl = document.createElement('div');
+    mEl.innerHTML = message.replace(/\n/g, '<br>');
+    mEl.style.cssText = 'font-size: 14px; color: #B3B3B3; line-height: 1.5; margin-bottom: 16px;';
+
+    const btnContainer = document.createElement('div');
+    btnContainer.style.cssText = 'display: flex; justify-content: flex-end; gap: 12px;';
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.innerHTML = 'いいえ';
+    cancelBtn.style.cssText = 'background: none; border: none; color: #3966D6; font-size: 14px; font-weight: bold; cursor: pointer; padding: 8px 12px;';
+    cancelBtn.onclick = () => overlay.remove();
+
+    const okBtn = document.createElement('button');
+    okBtn.innerHTML = 'はい';
+    okBtn.style.cssText = 'background: none; border: none; color: #3966D6; font-size: 14px; font-weight: bold; cursor: pointer; padding: 8px 12px;';
+    okBtn.onclick = () => {
+      overlay.remove();
+      onConfirm();
+    };
+
+    btnContainer.appendChild(cancelBtn);
+    btnContainer.appendChild(okBtn);
+    box.appendChild(btnContainer);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  }
 
   // ナイトモード用の暗い色（スタイル）を定義
   const nightStyles = `
@@ -25,16 +99,13 @@
     ::placeholder { color: #6A5F53 !important; }
   `;
 
-  // スタイルシートをページに適用する処理
   let styleEl = document.getElementById('sa-night-mode-styles');
   if (!styleEl) {
-    styleEl = document.createElement('style');
     styleEl = document.createElement('style');
     styleEl.id = 'sa-night-mode-styles';
     document.head.appendChild(styleEl);
   }
 
-  // ナイトモードのON/OFFを切り替える関数
   function toggleNightMode() {
     const isNight = localStorage.getItem(NIGHT_MODE_KEY) === 'true';
     if (!isNight) {
@@ -47,25 +118,21 @@
     updateNightButtonText();
   }
 
-  // ボタンの文字を現在の状態に合わせる関数
   function updateNightButtonText() {
     const nightBtn = document.getElementById('sa-night-toggle-btn');
     if (!nightBtn) return;
     const isNight = localStorage.getItem(NIGHT_MODE_KEY) === 'true';
-    nightBtn.innerHTML = isNight ? '(⁠ ⁠/⁠^⁠ω⁠^⁠)⁠/⁠♪⁠♪ナイトモード　なしにして' : '(⁠｢⁠`⁠･⁠ω⁠･⁠)⁠｢ナイトモード 開始';
+    nightBtn.innerHTML = isNight ? '(⁠ ⁠/⁠^⁠ω⁠^⁠)⁠/⁠♪⁠♪ナイトモード なしにして' : '(⁠｢⁠`⁠･⁠ω⁠･⁠)⁠｢ナイトモード 開始';
   }
 
-  // 初期状態の読み込み
   if (localStorage.getItem(NIGHT_MODE_KEY) === 'true') {
     styleEl.innerHTML = nightStyles;
   }
 
-  // ボタンを画面に注入する処理
   function injectButtons() {
     const statsCard = document.querySelector('.sa-stats');
     if (!statsCard) return;
 
-    // 既にコンテナがあれば中身をチェック、なければ作る
     let container = document.getElementById('sa-backup-container');
     if (!container) {
       container = document.createElement('div');
@@ -74,7 +141,6 @@
       statsCard.appendChild(container);
     }
 
-    // バックアップ用ボタン行
     if (!document.getElementById('sa-file-row')) {
       const fileRow = document.createElement('div');
       fileRow.id = 'sa-file-row';
@@ -97,7 +163,6 @@
       container.appendChild(fileRow);
     }
 
-    // ナイトモード切り替えボタン
     if (!document.getElementById('sa-night-toggle-btn')) {
       const nightBtn = document.createElement('button');
       nightBtn.id = 'sa-night-toggle-btn';
@@ -108,16 +173,15 @@
       updateNightButtonText();
     }
     
-    // ナイトモード時は区切り線の色を調整
     const isNight = localStorage.getItem(NIGHT_MODE_KEY) === 'true';
     container.style.borderTopColor = isNight ? '#4A4035' : '#EDE3C9';
   }
 
-  // データ保存・復元処理
+  // 🎯 修正ポイント：オリジナルの黒ダイアログに差し替え
   function exportData() {
     const rawData = localStorage.getItem(STORAGE_KEY);
     if (!rawData || rawData === '{"books":[],"memos":[],"dailyLog":{}}') {
-      alert('保存する作品データがまだありません。');
+      showCustomAlert('通知', '保存する作品データがまだありません。');
       return;
     }
     const blob = new Blob([rawData], { type: 'application/json' });
@@ -130,36 +194,47 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    alert('作品データを保存しみゃした！');
+    
+    // 黒画面で完了通知を出す
+    showCustomAlert('📊 通知', '作品データを保存しみゃした！');
   }
 
+  // 🎯 修正ポイント：オリジナルの黒画面（はい/いいえ）に差し替え
   function importData() {
-    if (!confirm('警告：データを復元すると現在の文章はすべて上書きされます。いいの？(<⁠・⁠∀⁠・⁠^)')) return;
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = '.json';
-    input.onchange = function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        try {
-          const json = JSON.parse(evt.target.result);
-          if (json.books || json.memos) {
-            localStorage.setItem(STORAGE_KEY, evt.target.result);
-            alert('復元が完了しました！');
-            window.location.reload();
-          } else {
-            alert('エラー：正しいバックアップファイルではありません。');
-          }
-        } catch (err) { alert('ファイルの読み込みに失敗しました。'); }
-      };
-      reader.readAsText(file);
-    };
-    input.click();
+    showCustomPrompt(
+      '⚠️ データ復元の確認',
+      '警告：データを復元すると現在の文章はすべて上書きされます。いいの？(<⁠・⁠∀⁠・⁠^)',
+      function() {
+        // 「はい」が押されたときだけ実行される処理
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = function(e) {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = function(evt) {
+            try {
+              const json = JSON.parse(evt.target.result);
+              if (json.books || json.memos) {
+                localStorage.setItem(STORAGE_KEY, evt.target.result);
+                showCustomAlert('📊 通知', '復元が完了しました！', function() {
+                  window.location.reload();
+                });
+              } else {
+                showCustomAlert('通知', 'エラー：正しいバックアップファイルではありません。');
+              }
+            } catch (err) { 
+              showCustomAlert('通知', 'ファイルの読み込みに失敗しました。'); 
+            }
+          };
+          reader.readAsText(file);
+        };
+        input.click();
+      }
+    );
   }
 
-  // 画面の書き換えを監視してボタンを自動再配置
   const observer = new MutationObserver(() => {
     if (document.querySelector('.sa-stats')) {
       injectButtons();
