@@ -1,4 +1,4 @@
-// --- 草紙（SOUSHI）専用：ごちゃごちゃ書き書き（ペンボタンモード切り替え版） ---
+// --- 草紙（SOUSHI）専用：ごちゃごちゃ書き書き（テンテンテンメニュー集約版） ---
 (function() {
   const SCRATCH_PREFIX = 'soushi-scratch-';
 
@@ -82,6 +82,32 @@
     header.appendChild(rightGroup);
     overlay.appendChild(header);
 
+    // --- 🔍 ページ内検索バー（初期状態は非表示） ---
+    const searchBar = document.createElement('div');
+    searchBar.id = 'sa-scratch-search-bar';
+    searchBar.style.cssText = 'background: #1A1A1A; padding: 8px 12px; display: none; align-items: center; gap: 8px; border-bottom: 1px solid #2D2D2D;';
+    
+    const searchInput = document.createElement('input');
+    searchInput.placeholder = '文字を探す…';
+    searchInput.style.cssText = 'flex: 1; background: #262626; border: none; border-radius: 4px; color: #fff; padding: 6px 10px; font-size: 14px; outline: none;';
+    
+    const mushroomBtn = document.createElement('button');
+    mushroomBtn.innerHTML = '🍄';
+    mushroomBtn.style.cssText = 'background: #262626; border: none; border-radius: 4px; padding: 6px 8px; cursor: pointer; font-size: 14px;';
+    
+    const starBtn = document.createElement('button');
+    starBtn.innerHTML = '⭐';
+    starBtn.style.cssText = 'background: #262626; border: none; border-radius: 4px; padding: 6px 8px; cursor: pointer; font-size: 14px;';
+
+    const searchCount = document.createElement('span');
+    searchCount.style.cssText = 'font-size: 12px; color: #888; min-width: 40px; text-align: center;';
+
+    searchBar.appendChild(searchInput);
+    searchBar.appendChild(mushroomBtn);
+    searchBar.appendChild(starBtn);
+    searchBar.appendChild(searchCount);
+    overlay.appendChild(searchBar);
+
     // --- エリア全体のラッパー ---
     const mainWrapper = document.createElement('div');
     mainWrapper.style.cssText = 'flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;';
@@ -96,8 +122,6 @@
     const textarea = document.createElement('textarea');
     textarea.placeholder = 'ごちゃごちゃ書き書き…';
     textarea.style.cssText = 'flex: 1; background: #111111; color: #E3E3E3; border: none; padding: 20px; font-size: 16px; resize: none; outline: none; line-height: 1.8; font-family: sans-serif;';
-    
-    // 🎯 初期状態は「読み取り専用（閲覧モード）」にしておく
     textarea.readOnly = true;
 
     const savedContent = localStorage.getItem(SCRATCH_PREFIX + selectedBookId) || '';
@@ -139,56 +163,115 @@
     mainWrapper.appendChild(topPanel);
     mainWrapper.appendChild(editorContainer);
 
-    // 🎯 📸 スクショ通りの「右下の青い筆（ペン）ボタン」を完全再現
     const penBtn = document.createElement('button');
-    penBtn.innerHTML = '🖊️'; // 筆・ペンマーク
-    penBtn.style.cssText = 'position: absolute; bottom: 24px; right: 24px; width: 56px; height: 56px; background: #1A54CE; border: none; border-radius: 16px; color: white; font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; transition: all 0.2s;';
+    penBtn.innerHTML = '🖊️';
+    penBtn.style.cssText = 'position: absolute; bottom: 24px; right: 24px; width: 56px; height: 56px; background: #1A54CE; border: none; border-radius: 16px; color: white; font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; z-index: 10;';
     
     penBtn.onclick = () => {
-      // 読み取り専用を解除して、編集モードにする
       textarea.readOnly = false;
-      textarea.focus(); // 自動でカーソルを当ててキーボードを立ち上げる
-      penBtn.style.display = 'none'; // 編集に入ったらペンボタンは隠す（チェックを押すとまた閲覧に戻る）
+      textarea.focus();
+      penBtn.style.display = 'none';
     };
     
     mainWrapper.appendChild(penBtn);
     overlay.appendChild(mainWrapper);
 
-    // 自動保存
-    textarea.oninput = () => {
-      localStorage.setItem(SCRATCH_PREFIX + selectedBookId, textarea.value);
-      docSub.innerHTML = '変更を保存中…';
-      setTimeout(() => { docSub.innerHTML = 'すべての変更を保存しました'; }, 600);
-    };
+    // 文字数確認
+    function checkWordCount() {
+      const fullText = textarea.value;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selectedText = fullText.substring(start, end);
 
-    // 画像追加（※編集モードの時だけ有効に）
-    fileInput.onchange = (e) => {
-      if (textarea.readOnly) {
-        alert('編集モード（右下のペンボタン）をオンにしてから画像を追加してください。');
+      let message = `【全体の文字数】\n${fullText.length} 文字`;
+      if (selectedText.length > 0) {
+        message += `\n\n【選択範囲の文字数】\n${selectedText.length} 文字`;
+      }
+      alert(message);
+    }
+
+    // 検索ロジック
+    let lastQuery = '';
+    let searchIndex = 0;
+    let matchPositions = [];
+
+    function doSearch(query) {
+      if (!query) {
+        searchCount.innerHTML = '';
         return;
       }
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        savedImages.push(evt.target.result);
-        localStorage.setItem(imgStorageKey, JSON.stringify(savedImages));
-        renderImages();
-      };
-      reader.readAsDataURL(file);
-    };
+      const text = textarea.value;
+      if (query !== lastQuery) {
+        lastQuery = query;
+        matchPositions = [];
+        let pos = text.indexOf(query);
+        while (pos !== -1) {
+          matchPositions.push(pos);
+          pos = text.indexOf(query, pos + 1);
+        }
+        searchIndex = 0;
+      }
+      if (matchPositions.length === 0) {
+        searchCount.innerHTML = '0/0';
+        return;
+      }
+      searchCount.innerHTML = `${searchIndex + 1}/${matchPositions.length}`;
+      const targetPos = matchPositions[searchIndex];
+      textarea.focus();
+      textarea.setSelectionRange(targetPos, targetPos + query.length);
+      searchIndex = (searchIndex + 1) % matchPositions.length;
+    }
 
-    // テンテンテン（上半分トグル）
+    searchInput.oninput = () => { lastQuery = ''; doSearch(searchInput.value); };
+    searchInput.onkeydown = (e) => { if(e.key === 'Enter') doSearch(searchInput.value); };
+    mushroomBtn.onclick = () => { searchInput.value = '🍄'; lastQuery = ''; doSearch('🍄'); };
+    starBtn.onclick = () => { searchInput.value = '⭐'; lastQuery = ''; doSearch('⭐'); };
+
+    // --- 📋 テンテンテン：3つのメニューに集約 ---
     menuBtn.onclick = () => {
-      if (topPanel.style.display === 'block') {
-        topPanel.style.display = 'none';
-        return;
-      }
+      const oldMenu = document.getElementById('sa-scratch-dropdown');
+      if (oldMenu) { oldMenu.remove(); return; }
 
+      const menuBox = document.createElement('div');
+      menuBox.id = 'sa-scratch-dropdown';
+      menuBox.style.cssText = 'position: absolute; top: 50px; right: 10px; background: #252525; border: 1px solid #3d3d3d; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); display: flex; flex-direction: column; z-index: 10000;';
+
+      const btnCount = document.createElement('button');
+      btnCount.innerHTML = '📊 文字数確認';
+      btnCount.style.cssText = 'background: none; border: none; color: #fff; padding: 12px 16px; font-size: 14px; text-align: left; cursor: pointer; white-space: nowrap;';
+      btnCount.onclick = () => { menuBox.remove(); checkWordCount(); };
+
+      const btnInfo = document.createElement('button');
+      btnInfo.innerHTML = '🗂️ 情報追加（メモなど）';
+      btnInfo.style.cssText = 'background: none; border: none; color: #fff; padding: 12px 16px; font-size: 14px; text-align: left; border-top: 1px solid #3d3d3d; cursor: pointer; white-space: nowrap;';
+      btnInfo.onclick = () => { menuBox.remove(); toggleTopPanel(); };
+
+      // 🎯 追加：❸ ページ内検索ボタン
+      const btnSearch = document.createElement('button');
+      btnSearch.innerHTML = '🔍 ページ内検索';
+      btnSearch.style.cssText = 'background: none; border: none; color: #fff; padding: 12px 16px; font-size: 14px; text-align: left; border-top: 1px solid #3d3d3d; cursor: pointer; white-space: nowrap;';
+      btnSearch.onclick = () => {
+        menuBox.remove();
+        if (searchBar.style.display === 'flex') {
+          searchBar.style.display = 'none';
+        } else {
+          searchBar.style.display = 'flex';
+          searchInput.focus();
+        }
+      };
+
+      menuBox.appendChild(btnCount);
+      menuBox.appendChild(btnInfo);
+      menuBox.appendChild(btnSearch);
+      overlay.appendChild(menuBox);
+    };
+
+    function toggleTopPanel() {
+      if (topPanel.style.display === 'block') { topPanel.style.display = 'none'; return; }
       topPanel.innerHTML = '';
       
       const titleLabel = document.createElement('div');
-      titleLabel.innerHTML = '📋 題名を長押しして【その本文（中身）】を先頭に貼り付け';
+      titleLabel.innerHTML = '📋 題名を長押しして【題名＋本文】を先頭に貼り付け';
       titleLabel.style.cssText = 'font-size: 12px; color: #888; margin-bottom: 12px; font-weight: bold;';
       topPanel.appendChild(titleLabel);
 
@@ -204,15 +287,13 @@
 
         let pressTimer;
         const startPress = () => {
-          if (textarea.readOnly) return; // 閲覧モード時は長押し挿入も無効化して安全に
+          if (textarea.readOnly) return;
           pressTimer = setTimeout(() => {
             const textToInsert = contentText || '';
-            if (textToInsert) {
-              textarea.value = textToInsert + "\n\n" + textarea.value;
-              localStorage.setItem(SCRATCH_PREFIX + selectedBookId, textarea.value);
-              docSub.innerHTML = '本文を挿入しました';
-              setTimeout(() => { docSub.innerHTML = 'すべての変更を保存しました'; }, 800);
-            }
+            textarea.value = `【${titleText}】\n${textToInsert}\n\n` + textarea.value;
+            localStorage.setItem(SCRATCH_PREFIX + selectedBookId, textarea.value);
+            docSub.innerHTML = '題名と本文を挿入しました';
+            setTimeout(() => { docSub.innerHTML = 'すべての変更を保存しました'; }, 800);
             item.style.background = '#3966D6';
             setTimeout(() => { item.style.background = '#262626'; }, 200);
           }, 600);
@@ -242,12 +323,38 @@
 
       topPanel.appendChild(listContainer);
       topPanel.style.display = 'block';
+    }
+
+    textarea.oninput = () => {
+      localStorage.setItem(SCRATCH_PREFIX + selectedBookId, textarea.value);
+      docSub.innerHTML = '変更を保存中…';
+      setTimeout(() => { docSub.innerHTML = 'すべての変更を保存しました'; }, 600);
+    };
+
+    fileInput.onchange = (e) => {
+      if (textarea.readOnly) { alert('編集モードにしてから画像を追加してください。'); return; }
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        savedImages.push(evt.target.result);
+        localStorage.setItem(imgStorageKey, JSON.stringify(savedImages));
+        renderImages();
+      };
+      reader.readAsDataURL(file);
     };
 
     undoBtn.onclick = redoBtn.onclick = () => {
       docSub.innerHTML = '矢印機能は現在見た目のみです';
       setTimeout(() => { docSub.innerHTML = 'すべての変更を保存しました'; }, 1000);
     };
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target !== menuBtn) {
+        const menuBox = document.getElementById('sa-scratch-dropdown');
+        if (menuBox) menuBox.remove();
+      }
+    });
 
     document.body.appendChild(overlay);
   }
