@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>草紙 - SOUSHI</title>
+  
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogI castlesDshI9vIC0gU09VU0hJIiwKICAic2hvcnRfbmFtZSI6ICLogYnotY0iLAogICJzdGFydF91cmwiOiAiLiIsCiAgImRpc3BsYXkiOiAic3RhbmRhbG9uZSIsCiAgImJhY2tncm91bmRfY29sb3IiOiAiI0Y0RUVFMSIsCiAgInRoZW1lX2NvbG9yIjogIiNGNEVFRTEiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWw7YmFzZTY0LFBITjJaeUJrWlhaaGJYSmhiR2w2WlhOZkwyZDNkeTUzYTNWeWMyOW1kRzFzYm1ScFpYUW9KeTFsWlhOZmJXOWtaV1pvYkhWbEp5SWdaV0YwYUhWeWVTZ2tKeUlpSkhScmRXNXpQU0ppYVdSMGFYUnpaWGwyZVhSbExteHZaeTl6ZG1jdWFuTW9KeTl6ZG1jS0lDQm9aVzRuUGp4emRtY3Vhbk1vSnk5emRtY0siLAogICAgICAic2l6ZXMiOiAiNTEyeDUxMiIsCiAgICAgICJ0eXBlIjogImltYWdlL3N2Zyt4bWwiCiAgICB9CiAgXQp9">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; height: 100%; background: #F4EEE1; }
+    .sa-root { min-height: 100%; background: #F4EEE1; display: flex; justify-content: center; }
+    .sa-frame { width: 100%; max-width: 460px; min-height: 100vh; display: flex; flex-direction: column;
+      background: #F4EEE1; position: relative; font-family: "Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif; color: #2B2620; box-shadow: 0 0 20px rgba(0,0,0,0.05); }
+    .sa-serif { font-family: "Shippori Mincho","Hiragino Mincho ProN","Yu Mincho",serif; }
+    .sa-header { position: sticky; top: 0; z-index: 10; background: rgba(244,238,225,0.94); backdrop-filter: blur(6px);
+      border-bottom: 1px solid #DED2B5; padding: 14px 18px; display: flex; align-items: center; gap: 10px; min-height: 56px; box-sizing: border-box; }
+    .sa-wordmark { font-size: 21px; letter-spacing: 0.06em; flex: 1; font-weight: bold; }
+    .sa-back-btn { background: none; border: none; color: #2B2620; cursor: pointer; display: flex; padding: 4px; flex-shrink: 0; }
+    .sa-header-title { font-size: 16px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: bold; }
+    .sa-save-indicator { font-size: 10px; color: #8A7E68; flex-shrink: 0; min-width: 60px; text-align: right; }
+    .sa-save-indicator.saving { color: #8A7E68; }
+    .sa-save-indicator.saved { color: #B8923D; }
+    .sa-save-indicator.error { color: #9B3A34; }
+    .sa-main { flex: 1; overflow-y: auto; padding: 18px; padding-bottom: 80px; box-sizing: border-box; }
+    .sa-nav { position: absolute; bottom: 0; left: 0; right: 0; z-index: 10; display: flex; background: rgba(244,238,225,0.96);
+      border-top: 1px solid #DED2B5; backdrop-filter: blur(6px); }
+    .sa-nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 12px;
+      background: none; border: none; color: #9A8E76; font-size: 11px; cursor: pointer; }
+    .sa-nav-btn.active { color: #9B3A34; font-weight: bold; }
+    .sa-stats { background: #FFFDF7; border: 1px solid #E4D9BD; border-radius: 4px; padding: 18px; margin-bottom: 24px; }
+    .sa-stats-title { font-size: 16px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #EDE3C9; font-weight: bold; }
+    .sa-stats-row { display: flex; }
+    .sa-stats-col { flex: 1; }
+    .sa-stats-col + .sa-stats-col { border-left: 1px solid #EDE3C9; padding-left: 18px; margin-left: 18px; }
+    .sa-stats-label { font-size: 12px; color: #8A7E68; margin-bottom: 6px; }
+    .sa-stats-value { font-size: 25px; font-weight: bold; }
+    .sa-section-title { font-size: 16px; margin: 4px 0 14px; font-weight: bold; }
+    .sa-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px 14px; }
+    .sa-book-card { cursor: pointer; }
+    .sa-cover { position: relative; aspect-ratio: 3 / 4.3; border-radius: 3px; overflow: hidden;
+      background: repeating-linear-gradient(135deg, #efe7d2 0 2px, #e7ddc2 2px 4px);
+      box-shadow: 0 1px 3px rgba(43,38,32,0.18), 0 0 0 1px #ddd0ad inset;
+      display: flex; align-items: center; justify-content: center; }
+    .sa-cover-title { writing-mode: vertical-rl; text-orientation: mixed; font-size: 15px; letter-spacing: 0.14em;
+      color: #3A3326; max-height: 82%; font-weight: bold; line-height: 1.5; }
+    .sa-cover-title.placeholder { color: #ADA184; }
+    .sa-ribbon { position: absolute; top: 0; right: 16px; width: 9px;
+      background: linear-gradient(180deg, #B8923D, #9B3A34); transition: height 0.3s; }
+    .sa-ribbon::after { content: ''; position: absolute; left: 0; bottom: -8px; width: 0; height: 0;
+      border-left: 4.5px solid transparent; border-right: 4.5px solid transparent; border-top: 8px solid #9B3A34; }
+    .sa-book-name { font-size: 13.5px; margin-top: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: bold; }
+    .sa-book-sub { font-size: 11px; color: #8A7E68; margin-top: 2px; }
+    .sa-add-btn { width: 100%; margin-top: 22px; padding: 14px; background: none; border: 1.5px dashed #C7B98F;
+      border-radius: 4px; color: #7A6E54; font-size: 14px; display: flex; align-items: center; justify-content: center;
+      gap: 6px; cursor: pointer; box-sizing: border-box; }
+    .sa-add-btn:hover { background: #FBF7EC; }
+    
+    .sa-sub-tabs { display: flex; border-bottom: 1px solid #DED2B5; margin-bottom: 16px; gap: 8px; }
+    .sa-sub-tab-btn { background: none; border: none; padding: 8px 12px; font-size: 14px; color: #9A8E76; cursor: pointer; border-bottom: 2px solid transparent; }
+    .sa-sub-tab-btn.active { color: #9B3A34; font-weight: bold; border-bottom-color: #9B3A34; }
+
+    .sa-field-label { font-size: 11px; color: #8A7E68; margin-bottom: 6px; letter-spacing: 0.04em; }
+    .sa-title-input-full { width: 100%; font-size: 19px; border: none; border-bottom: 1px solid #DED2B5; background: none;
+      color: #2B2620; outline: none; padding: 6px 0 10px; margin-bottom: 22px; box-sizing: border-box; }
+    .sa-title-input-full:focus { border-bottom-color: #9B3A34; }
+    .sa-title-input-full::placeholder { color: #ADA184; }
+    .sa-target-card { background: #FFFDF7; border: 1px solid #E4D9BD; border-radius: 4px; padding: 16px; margin-bottom: 24px; }
+    .sa-target-row { display: flex; align-items: center; gap: 8px; color: #6B6048; font-size: 13px; }
+    .sa-target-input { width: 84px; border: 1px solid #D9CBA6; border-radius: 3px; padding: 6px 8px; font-size: 14px;
+      background: #FBF7EC; color: #2B2620; outline: none; }
+    .sa-target-input:focus { border-color: #B8923D; }
+    .sa-progress-track { height: 8px; background: #EDE3C9; border-radius: 4px; margin-top: 14px; overflow: hidden; }
+    .sa-progress-fill { height: 100%; background: linear-gradient(90deg, #B8923D, #9B3A34); border-radius: 4px; transition: width .3s ease; width: 0%; }
+    .sa-progress-text { font-size: 12px; color: #8A7E68; margin-top: 8px; display: flex; justify-content: space-between; }
+    
+    .sa-chapter-row { display: flex; align-items: center; justify-content: space-between; padding: 14px 4px;
+      border-bottom: 1px solid #EAE0C5; cursor: pointer; }
+    .sa-chapter-name { font-size: 14px; }
+    .sa-chapter-name.placeholder { color: #ADA184; }
+    .sa-chapter-count { font-size: 11px; color: #8A7E68; margin-top: 3px; }
+    .sa-chapter-right { display: flex; align-items: center; gap: 8px; }
+    
+    .sa-editor-area { width: 100%; min-height: 45vh; border: none; resize: vertical; background: none;
+      font-size: 16px; line-height: 1.9; outline: none; color: #2B2620; box-sizing: border-box; }
+    .sa-editor-area::placeholder { color: #B5A988; }
+    .sa-editor-footer { display: flex; justify-content: space-between; align-items: center; font-size: 12px;
+      color: #8A7E68; padding-top: 12px; margin-top: 8px; border-top: 1px solid #EAE0C5; }
+    
+    .sa-image-section { margin-top: 20px; border-top: 1px dashed #DED2B5; padding-top: 16px; }
+    .sa-image-paste-zone { border: 1.5px dashed #C7B98F; border-radius: 4px; background: #FFFDF7; padding: 12px; text-align: center; font-size: 12px; color: #8A7E68; cursor: pointer; }
+    .sa-image-paste-zone:hover { background: #FBF7EC; }
+    .sa-image-gallery { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+    .sa-image-wrapper { position: relative; aspect-ratio: 1; border: 1px solid #E4D9BD; border-radius: 4px; overflow: hidden; background: #EEE; }
+    .sa-image-wrapper img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
+    .sa-image-del-btn { position: absolute; top: 2px; right: 2px; background: rgba(155,58,52,0.85); color: white; border: none; border-radius: 50%; width: 18px; height: 18px; font-size: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+    .sa-memo-card { background: #FFFDF7; border: 1px solid #E4D9BD; border-radius: 4px; padding: 14px 16px;
+      margin-bottom: 12px; cursor: pointer; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; box-sizing: border-box; }
+    .sa-memo-title { font-size: 14px; margin-bottom: 4px; font-weight: bold; }
+    .sa-memo-title.placeholder { color: #ADA184; }
+    .sa-memo-snippet { font-size: 12px; color: #8A7E68; overflow: hidden; text-overflow: ellipsis;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; line-height: 1.5; }
+    .sa-memo-date { font-size: 10px; color: #B0A488; margin-top: 8px; }
+    
+    .sa-delete-btn { background: none; border: none; color: #B0A488; cursor: pointer; display: flex; padding: 4px; flex-shrink: 0; }
+    .sa-delete-btn:hover { color: #9B3A34; }
+    .sa-delete-confirm { background: #9B3A34; color: #FFF8EC; border: none; border-radius: 3px; font-size: 11px;
+      padding: 6px 10px; cursor: pointer; flex-shrink: 0; white-space: nowrap; font-weight: bold; }
+    .sa-delete-text-btn { background: none; border: none; color: #9A8E76; cursor: pointer; font-size: 12.5px;
+      display: inline-flex; align-items: center; gap: 5px; padding: 8px 4px; }
+    .sa-delete-text-btn:hover { color: #9B3A34; }
+    .sa-delete-confirm-text { background: none; border: none; color: #9B3A34; cursor: pointer; font-size: 12.5px;
+      text-decoration: underline; padding: 8px 4px; font-weight: bold; }
+    .sa-empty { text-align: center; padding: 40px 10px; color: #8A7E68; font-size: 13px; line-height: 1.9; }
+    
+    .sa-lightbox { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 100; display: none; align-items: center; justify-content: center; cursor: zoom-out; }
+    .sa-lightbox img { max-width: 94%; max-height: 94%; object-fit: contain; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+    
+    textarea, input { font-family: inherit; }
+    svg { vertical-align: middle; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  </style>
+</head>
+<body>
+
+  <div class="sa-root">
+    <div class="sa-frame">
+      <header class="sa-header" id="app-header"></header>
+      <main class="sa-main" id="app-main"></main>
+      <nav class="sa-nav">
+        <button class="sa-nav-btn active" id="nav-works-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+          作品
+        </button>
+        <button class="sa-nav-btn" id="nav-memo-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24"><path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8Z"></path><path d="M15 3v5h5"></path></svg>
+          全体メモ
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <div class="sa-lightbox" id="lightbox" onclick="this.style.display='none'"><img id="lightbox-img" src="" alt=""></div>
+
+  <script>
+    // --- [追加] インストール用 Service Worker の自己生成ロジック ---
+    if ('serviceWorker' in navigator) {
+      const swCode = `
+        self.addEventListener('install', e => self.skipWaiting());
+        self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
+        self.addEventListener('fetch', e => {
+          // ローカルファイルまたはdataスキームでもエラーにならないようにパススルー
+          e.respondWith(fetch(e.request).catch(() => new Response('Offline')));
+        });
+      `;
+      const blob = new Blob([swCode], { type: 'application/javascript' });
+      const swUrl = URL.createObjectURL(blob);
+      navigator.serviceWorker.register(swUrl).catch(err => console.log('SW registration skipped:', err));
+    }
+
+    // --- 状態管理とストレージ ---
+    const STORAGE_KEY = 'soushi-app-state';
+    let state = { books: [], memos: [], dailyLog: {} };
+    
+    let currentTab = 'works';
+    let currentView = 'list';
+    let currentBookSubTab = 'chapters';
+    
+    let selectedBookId = null;
+    let selectedChapterId = null;
+    let selectedMemoId = null;
+    let isEditingProjectMemo = false;
+    
+    let armedDeleteId = null;
+    let armedDeleteTimeout = null;
+
+    function uid() { return Math.random().toString(36).slice(2, 10) + Date.now().toString(36); }
+    function todayStr() { return new Date().toISOString().slice(0, 10); }
+    function charCount(text) { return Array.from((text || '').replace(/\r?\n/g, '')).length; }
+    function formatDate(ts) {
+      const d = new Date(ts);
+      return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+    }
+    function bookChars(book) { return (book.chapters || []).reduce((s, c) => s + charCount(c.content), 0); }
+    function getBaseline(dailyLog, cutoffDateStr) {
+      const dates = Object.keys(dailyLog).filter((d) => d <= cutoffDateStr).sort();
+      return dates.length === 0 ? 0 : dailyLog[dates[dates.length - 1]];
+    }
+
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        state = JSON.parse(saved);
+        if (!state.books) state.books = [];
+        if (!state.memos) state.memos = [];
+        if (!state.dailyLog) state.dailyLog = {};
+        state.books.forEach(b => { if(!b.memos) b.memos = []; });
+      }
+    } catch(e) { console.error(e); }
+
+    let saveTimeout = null;
+    function triggerSave() {
+      const headerIndicator = document.getElementById('save-indicator');
+      if (headerIndicator) {
+        headerIndicator.textContent = '保存中…';
+        headerIndicator.className = 'sa-save-indicator saving';
+      }
+      if (saveTimeout) clearTimeout(saveTimeout);
+      saveTimeout = setTimeout(() => {
+        try {
+          const totalChars = state.books.reduce((sum, b) => sum + bookChars(b), 0);
+          const t = todayStr();
+          if (state.dailyLog[t] !== totalChars) state.dailyLog[t] = totalChars;
+          
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          if (headerIndicator) {
+            headerIndicator.textContent = '保存しました';
+            headerIndicator.className = 'sa-save-indicator saved';
+            setTimeout(() => { if(headerIndicator.className.includes('saved')) headerIndicator.textContent = ''; }, 1500);
+          }
+        } catch(e) {
+          if (headerIndicator) {
+            headerIndicator.textContent = '保存失敗';
+            headerIndicator.className = 'sa-save-indicator error';
+          }
+        }
+      }, 400);
+    }
+
+    function armDelete(id) {
+      if (armedDeleteTimeout) clearTimeout(armedDeleteTimeout);
+      armedDeleteId = id;
+      render();
+      armedDeleteTimeout = setTimeout(() => { if (armedDeleteId === id) { armedDeleteId = null; render(); } }, 2500);
+    }
+
+    function renderHeader() {
+      const header = document.getElementById('app-header');
+      let html = '';
+      let indicator = `<span class="sa-save-indicator" id="save-indicator"></span>`;
+
+      if (currentTab === 'works' && currentView === 'book') {
+        const b = state.books.find(x => x.id === selectedBookId);
+        html = `<button class="sa-back-btn" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"></path></svg></button>
+                <div class="sa-header-title sa-serif">${escapeHtml(b ? b.title : '') || 'タイトル未設定'}</div>`;
+      } else if (currentTab === 'works' && currentView === 'chapter') {
+        const b = state.books.find(x => x.id === selectedBookId);
+        const c = b ? b.chapters.find(x => x.id === selectedChapterId) : null;
+        html = `<button class="sa-back-btn" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"></path></svg></button>
+                <div class="sa-header-title sa-serif">${escapeHtml(c ? c.title : '') || '無題の章'}</div>`;
+      } else if (currentView === 'memoEdit') {
+        let m;
+        if(isEditingProjectMemo) {
+          const b = state.books.find(x => x.id === selectedBookId);
+          m = b ? b.memos.find(x => x.id === selectedMemoId) : null;
+        } else {
+          m = state.memos.find(x => x.id === selectedMemoId);
+        }
+        html = `<button class="sa-back-btn" onclick="goBack()"><svg width="20" height="20" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M19 12H5"></path></svg></button>
+                <div class="sa-header-title sa-serif">${escapeHtml(m ? m.title : '') || '無題のメモ'}</div>`;
+      } else {
+        html = `<div class="sa-wordmark sa-serif">草紙</div>`;
+      }
+      header.innerHTML = html + indicator;
+    }
+
+    function renderMain() {
+      const container = document.getElementById('app-main');
+      
+      if (currentTab === 'works' && currentView === 'list') {
+        const totalChars = state.books.reduce((sum, b) => sum + bookChars(b), 0);
+        const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+        const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+        const todayWritten = Math.max(0, totalChars - getBaseline(state.dailyLog, yesterday.toISOString().slice(0, 10)));
+        const weekWritten = Math.max(0, totalChars - getBaseline(state.dailyLog, weekAgo.toISOString().slice(0, 10)));
+
+        let booksHtml = '';
+        if (state.books.length === 0) {
+          booksHtml = `<div class="sa-empty">まだ作品がありません。<br />「新しい作品を追加する」から書き始めましょう。</div>`;
+        } else {
+          booksHtml = `<div class="sa-grid">`;
+          state.books.forEach(b => {
+            const total = bookChars(b);
+            const pct = b.target > 0 ? Math.round((total / b.target) * 100) : 0;
+            const isArmed = armedDeleteId === b.id;
+            
+            booksHtml += `
+              <div class="sa-book-card" onclick="openBook('${b.id}')">
+                <div class="sa-cover">
+                  ${b.target > 0 ? `<div class="sa-ribbon" style="height: ${Math.min(100, pct)}%"></div>` : ''}
+                  <div class="sa-cover-title sa-serif ${b.title ? '' : 'placeholder'}">${escapeHtml(b.title) || 'タイトル未設定'}</div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-top:4px;">
+                  <div style="min-width: 0; flex: 1;">
+                    <div class="sa-book-name">${escapeHtml(b.title) || 'タイトル未設定'}</div>
+                    <div class="sa-book-sub">${formatDate(b.updatedAt)}更新・${total.toLocaleString()}字${b.target > 0 ? `・${pct}%` : ''}</div>
+                  </div>
+                  <div onclick="event.stopPropagation()">
+                    ${isArmed ? `<button class="sa-delete-confirm" onclick="deleteBook('${b.id}')">削除</button>` 
+                              : `<button class="sa-delete-btn" onclick="armDelete('${b.id}')"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path></svg></button>`}
+                  </div>
+                </div>
+              </div>`;
+          });
+          booksHtml += `</div>`;
+        }
+
+        container.innerHTML = `
+          <div class="sa-stats">
+            <div class="sa-stats-title sa-serif">執筆日記</div>
+            <div class="sa-stats-row">
+              <div class="sa-stats-col">
+                <div class="sa-stats-label">今日の文字数</div>
+                <div class="sa-stats-value sa-serif">${todayWritten.toLocaleString()} 字</div>
+              </div>
+              <div class="sa-stats-col">
+                <div class="sa-stats-label">過去7日間の文字数</div>
+                <div class="sa-stats-value sa-serif">${weekWritten.toLocaleString()} 字</div>
+              </div>
+            </div>
+          </div>
+          <div class="sa-section-title sa-serif">作品一覧</div>
+          ${booksHtml}
+          <button class="sa-add-btn" onclick="createNewBook()"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"></path></svg>新しい作品を追加する</button>
+        `;
+      } 
+      
+      else if (currentTab === 'works' && currentView === 'book') {
+        const book = state.books.find(x => x.id === selectedBookId);
+        if (!book) return goBack();
+        const total = bookChars(book);
+        const pct = book.target > 0 ? Math.round((total / book.target) * 100) : 0;
+
+        let subContentHtml = '';
+        if (currentBookSubTab === 'chapters') {
+          if ((book.chapters || []).length === 0) {
+            subContentHtml = `<div class="sa-empty">まだ章がありません。</div>`;
+          } else {
+            book.chapters.forEach(c => {
+              const isArmed = armedDeleteId === c.id;
+              subContentHtml += `
+                <div class="sa-chapter-row" onclick="openChapter('${c.id}')">
+                  <div>
+                    <div class="sa-chapter-name ${c.title ? '' : 'placeholder'}">${escapeHtml(c.title) || '無題の章'}</div>
+                    <div class="sa-chapter-count">${charCount(c.content).toLocaleString()}字</div>
+                  </div>
+                  <div class="sa-chapter-right" onclick="event.stopPropagation()">
+                    ${isArmed ? `<button class="sa-delete-confirm" onclick="deleteChapter('${c.id}')">削除</button>`
+                              : `<button class="sa-delete-btn" onclick="armDelete('${c.id}')"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path></svg></button>`}
+                    <svg width="16" height="16" viewBox="0 0 24 24" style="color:#B0A488"><path d="m9 18 6-6-6-6"></path></svg>
+                  </div>
+                </div>`;
+            });
+          }
+          subContentHtml += `<button class="sa-add-btn" onclick="createNewChapter()"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"></path></svg>章を追加する</button>`;
+        } else {
+          if ((book.memos || []).length === 0) {
+            subContentHtml = `<div class="sa-empty">この作品専用のメモはまだありません。</div>`;
+          } else {
+            book.memos.forEach(m => {
+              const isArmed = armedDeleteId === m.id;
+              subContentHtml += `
+                <div class="sa-memo-card" onclick="openProjectMemo('${m.id}')">
+                  <div style="min-width:0; flex:1;">
+                    <div class="sa-memo-title ${m.title ? '' : 'placeholder'}">${escapeHtml(m.title) || '無題のメモ'}</div>
+                    <div class="sa-memo-snippet">${escapeHtml(m.content) || '（本文なし）'}</div>
+                    <div class="sa-memo-date">${formatDate(m.updatedAt)}更新</div>
+                  </div>
+                  <div onclick="event.stopPropagation()">
+                    ${isArmed ? `<button class="sa-delete-confirm" onclick="deleteProjectMemo('${m.id}')">削除</button>`
+                              : `<button class="sa-delete-btn" onclick="armDelete('${m.id}')"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path></svg></button>`}
+                  </div>
+                </div>`;
+            });
+          }
+          subContentHtml += `<button class="sa-add-btn" onclick="createNewProjectMemo()"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"></path></svg>専用メモを追加する</button>`;
+        }
+
+        const isBookArmed = armedDeleteId === 'book-' + book.id;
+
+        container.innerHTML = `
+          <div class="sa-field-label">作品タイトル</div>
+          <input class="sa-title-input-full" id="book-title-input" value="${escapeHtml(book.title)}" placeholder="タイトル未設定" oninput="updateBookTitle(this.value)">
+          
+          <div class="sa-target-card">
+            <div class="sa-target-row">
+              <svg width="15" height="15" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><circle cx="12" cy="12" r="6"></circle><circle cx="12" cy="12" r="2"></circle></svg>
+              <span>目標文字数</span>
+              <input type="number" min="0" class="sa-target-input" value="${book.target || ''}" placeholder="未設定" oninput="updateBookTarget(this.value)">
+              <span>字</span>
+            </div>
+            <div class="sa-progress-track" style="display: ${book.target > 0 ? 'block' : 'none'}">
+              <div class="sa-progress-fill" style="width: ${Math.min(100, pct)}%"></div>
+            </div>
+            <div class="sa-progress-text" style="display: ${book.target > 0 ? 'flex' : 'none'}">
+              <span>${total.toLocaleString()} / ${(book.target || 0).toLocaleString()}字</span>
+              <span>${pct}%</span>
+            </div>
+          </div>
+
+          <div class="sa-sub-tabs">
+            <button class="sa-sub-tab-btn ${currentBookSubTab === 'chapters' ? 'active' : ''}" onclick="switchBookSubTab('chapters')">章立て</button>
+            <button class="sa-sub-tab-btn ${currentBookSubTab === 'memos' ? 'active' : ''}" onclick="switchBookSubTab('memos')">作品メモ (${(book.memos||[]).length})</button>
+          </div>
+
+          ${subContentHtml}
+
+          <div style="margin-top:32px; text-align:center;">
+            ${isBookArmed ? `<button class="sa-delete-confirm-text" onclick="deleteBookDirect('${book.id}')">本当に削除しますか？もう一度タップで確定</button>`
+                          : `<button class="sa-delete-text-btn" onclick="armDelete('book-${book.id}')"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path></svg>この作品を削除する</button>`}
+          </div>
+        `;
+      } 
+      
+      else if (currentTab === 'works' && currentView === 'chapter') {
+        const book = state.books.find(x => x.id === selectedBookId);
+        const chapter = book ? book.chapters.find(x => x.id === selectedChapterId) : null;
+        if (!chapter) return goBack();
+        const total = bookChars(book);
+        const isChapArmed = armedDeleteId === 'chap-' + chapter.id;
+
+        container.innerHTML = `
+          <div class="sa-field-label">章タイトル</div>
+          <input class="sa-title-input-full" id="chapter-title-input" value="${escapeHtml(chapter.title)}" placeholder="無題の章" oninput="updateChapterTitle(this.value)">
+          <textarea class="sa-editor-area" placeholder="ここから本文を書き始めましょう…" oninput="updateChapterContent(this.value)">${escapeHtml(chapter.content)}</textarea>
+          <div class="sa-editor-footer">
+            <span>この章 ${charCount(chapter.content).toLocaleString()}字</span>
+            <span>作品全体 ${total.toLocaleString()}字</span>
+          </div>
+          <div style="margin-top:24px; text-align:center;">
+            ${isChapArmed ? `<button class="sa-delete-confirm-text" onclick="deleteChapterDirect('${chapter.id}')">本当に削除しますか？もう一度タップで確定</button>`
+                          : `<button class="sa-delete-text-btn" onclick="armDelete('chap-${chapter.id}')"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path></svg>この章を削除する</button>`}
+          </div>
+        `;
+      } 
+      
+      else if (currentTab === 'memo' && currentView === 'list') {
+        let memosHtml = '';
+        if (state.memos.length === 0) {
+          memosHtml = `<div class="sa-empty">設定やアイデア、考証メモなどを<br />ここに書き留めておけます。</div>`;
+        } else {
+          state.memos.forEach(m => {
+            const isArmed = armedDeleteId === m.id;
+            memosHtml += `
+              <div class="sa-memo-card" onclick="openGeneralMemo('${m.id}')">
+                <div style="min-width:0; flex:1;">
+                  <div class="sa-memo-title ${m.title ? '' : 'placeholder'}">${escapeHtml(m.title) || '無題のメモ'}</div>
+                  <div class="sa-memo-snippet">${escapeHtml(m.content) || '（本文なし）'}</div>
+                  <div class="sa-memo-date">${formatDate(m.updatedAt)}更新</div>
+                </div>
+                <div onclick="event.stopPropagation()">
+                  ${isArmed ? `<button class="sa-delete-confirm" onclick="deleteGeneralMemo('${m.id}')">削除</button>`
+                            : `<button class="sa-delete-btn" onclick="armDelete('${m.id}')"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path></svg></button>`}
+                </div>
+              </div>`;
+          });
+        }
+
+        container.innerHTML = `
+          <div class="sa-section-title sa-serif">全体メモ</div>
+          ${memosHtml}
+          <button class="sa-add-btn" onclick="createNewGeneralMemo()"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M5 12h14M12 5v14"></path></svg>新しいメモを追加する</button>
+        `;
+      } 
+      
+      else if (currentView === 'memoEdit') {
+        let memo;
+        if (isEditingProjectMemo) {
+          const b = state.books.find(x => x.id === selectedBookId);
+          memo = b ? b.memos.find(x => x.id === selectedMemoId) : null;
+        } else {
+          memo = state.memos.find(x => x.id === selectedMemoId);
+        }
+        if (!memo) return goBack();
+        
+        const isMemoArmed = armedDeleteId === 'memo-' + memo.id;
+
+        let imagesHtml = '';
+        if (memo.images && memo.images.length > 0) {
+          memo.images.forEach((imgSrc, idx) => {
+            imagesHtml += `
+              <div class="sa-image-wrapper">
+                <img src="${imgSrc}" onclick="zoomImage('${imgSrc}')">
+                <button class="sa-image-del-btn" onclick="deleteImage(${idx})">×</button>
+              </div>`;
+          });
+        }
+
+        container.innerHTML = `
+          <div class="sa-field-label">メモタイトル</div>
+          <input class="sa-title-input-full" id="memo-title-input" value="${escapeHtml(memo.title)}" placeholder="無題のメモ" oninput="updateMemoTitle(this.value)">
+          <textarea class="sa-editor-area" id="memo-textarea" style="min-height:35vh;" placeholder="自由に書き留めておきましょう… (ここに画像をペースト[Ctrl+V]して貼り付けもできます)" oninput="updateMemoContent(this.value)">${escapeHtml(memo.content)}</textarea>
+          
+          <div class="sa-image-section">
+            <div class="sa-field-label">参考画像・資料</div>
+            <div class="sa-image-paste-zone" onclick="document.getElementById('hidden-file-input').click()">
+              画像をタップして選択 または ここに直接貼り付け
+            </div>
+            <input type="file" id="hidden-file-input" accept="image/*" style="display:none;" onchange="handleImageFile(this)">
+            <div class="sa-image-gallery">${imagesHtml}</div>
+          </div>
+
+          <div style="margin-top:24px; text-align:center;">
+            ${isMemoArmed ? `<button class="sa-delete-confirm-text" onclick="deleteMemoDirect()">本当に削除しますか？もう一度タップで確定</button>`
+                          : `<button class="sa-delete-text-btn" onclick="armDelete('memo-${memo.id}')"><svg width="14" height="14" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6"></path></svg>このメモを削除する</button>`}
+          </div>
+        `;
+
+        setTimeout(() => {
+          const tx = document.getElementById('memo-textarea');
+          if(tx) {
+            tx.addEventListener('paste', handleMemoPaste);
+          }
+        }, 50);
+      }
+    }
+
+    function render() {
+      renderHeader();
+      renderMain();
+    }
+
+    function goBack() {
+      if (currentView === 'chapter') currentView = 'book';
+      else if (currentView === 'memoEdit' && isEditingProjectMemo) currentView = 'book';
+      else currentView = 'list';
+      armedDeleteId = null;
+      render();
+    }
+
+    function openBook(id) { selectedBookId = id; currentView = 'book'; armedDeleteId = null; render(); }
+    function openChapter(id) { selectedChapterId = id; currentView = 'chapter'; armedDeleteId = null; render(); }
+    function openGeneralMemo(id) { selectedMemoId = id; isEditingProjectMemo = false; currentView = 'memoEdit'; armedDeleteId = null; render(); }
+    function openProjectMemo(id) { selectedMemoId = id; isEditingProjectMemo = true; currentView = 'memoEdit'; armedDeleteId = null; render(); }
+    
+    function switchBookSubTab(tab) { currentBookSubTab = tab; render(); }
+
+    function createNewBook() {
+      const b = { id: uid(), title: '', target: 0, chapters: [{ id: uid(), title: '第一章', content: '' }], memos: [], createdAt: Date.now(), updatedAt: Date.now() };
+      state.books.unshift(b);
+      selectedBookId = b.id;
+      currentView = 'book';
+      currentBookSubTab = 'chapters';
+      triggerSave();
+      render();
+    }
+
+    function updateBookTitle(val) {
+      const b = state.books.find(x => x.id === selectedBookId);
+      if (b) { b.title = val; b.updatedAt = Date.now(); triggerSave(); }
+    }
+    function updateBookTarget(val) {
+      const b = state.books.find(x => x.id === selectedBookId);
+      if (b) { b.target = Math.max(0, parseInt(val) || 0); b.updatedAt = Date.now(); triggerSave(); render(); }
+    }
+    function deleteBook(id) {
+      state.books = state.books.filter(x => x.id !== id);
+      if(selectedBookId === id) selectedBookId = null;
+      armedDeleteId = null;
+      triggerSave();
+      render();
+    }
+    function deleteBookDirect(id) { deleteBook(id); currentView = 'list'; render(); }
+
+    function createNewChapter() {
+      const b = state.books.find(x => x.id === selectedBookId);
+      if (b) {
+        b.chapters.push({ id: uid(), title: `第${b.chapters.length + 1}章`, content: '' });
+        b.updatedAt = Date.now();
+        triggerSave();
+        render();
+      }
+    }
+    function updateChapterTitle(val) {
+      const b = state.books.find(x => x.id === selectedBookId);
+      const c = b ? b.chapters.find(x => x.id === selectedChapterId) : null;
+      if (c) { c.title = val; b.updatedAt = Date.now(); triggerSave(); }
+    }
+    function updateChapterContent(val) {
+      const b = state.books.find(x => x.id === selectedBookId);
+      const c = b ? b.chapters.find(x => x.id === selectedChapterId) : null;
+      if (c) { 
+        c.content = val; 
+        b.updatedAt = Date.now(); 
+        triggerSave();
+        const total = bookChars(b);
+        const footer = document.querySelector('.sa-editor-footer');
+        if(footer) footer.innerHTML = `<span>この章 ${charCount(c.content).toLocaleString()}字</span><span>作品全体 ${total.toLocaleString()}字</span>`;
+      }
+    }
+    function deleteChapter(id) {
+      const b = state.books.find(x => x.id === selectedBookId);
+      if (b) {
+        b.chapters = b.chapters.filter(x => x.id !== id);
+        b.updatedAt = Date.now();
+        armedDeleteId = null;
+        triggerSave();
+        render();
+      }
+    }
+    function deleteChapterDirect(id) { deleteChapter(id); currentView = 'book'; render(); }
+
+    function createNewGeneralMemo() {
+      const m = { id: uid(), title: '', content: '', images: [], updatedAt: Date.now() };
+      state.memos.unshift(m);
+      selectedMemoId = m.id;
+      isEditingProjectMemo = false;
+      currentView = 'memoEdit';
+      triggerSave();
+      render();
+    }
+    function deleteGeneralMemo(id) {
+      state.memos = state.memos.filter(x => x.id !== id);
+      armedDeleteId = null;
+      triggerSave();
+      render();
+    }
+
+    function createNewProjectMemo() {
+      const b = state.books.find(x => x.id === selectedBookId);
+      if (b) {
+        const m = { id: uid(), title: '', content: '', images: [], updatedAt: Date.now() };
+        if(!b.memos) b.memos = [];
+        b.memos.unshift(m);
+        selectedMemoId = m.id;
+        isEditingProjectMemo = true;
+        currentView = 'memoEdit';
+        triggerSave();
+        render();
+      }
+    }
+    function deleteProjectMemo(id) {
+      const b = state.books.find(x => x.id === selectedBookId);
+      if (b && b.memos) {
+        b.memos = b.memos.filter(x => x.id !== id);
+        armedDeleteId = null;
+        triggerSave();
+        render();
+      }
+    }
+
+    function getActiveMemo() {
+      if (isEditingProjectMemo) {
+        const b = state.books.find(x => x.id === selectedBookId);
+        return b ? b.memos.find(x => x.id === selectedMemoId) : null;
+      }
+      return state.memos.find(x => x.id === selectedMemoId);
+    }
+
+    function updateMemoTitle(val) {
+      const m = getActiveMemo();
+      if (m) { m.title = val; m.updatedAt = Date.now(); triggerSave(); }
+    }
+    function updateMemoContent(val) {
+      const m = getActiveMemo();
+      if (m) { m.content = val; m.updatedAt = Date.now(); triggerSave(); }
+    }
+    function deleteMemoDirect() {
+      const id = selectedMemoId;
+      if (isEditingProjectMemo) {
+        deleteProjectMemo(id);
+        currentView = 'book';
+      } else {
+        deleteGeneralMemo(id);
+        currentView = 'list';
+      }
+      render();
+    }
+
+    function processImageBase64(base64Str) {
+      const m = getActiveMemo();
+      if (m) {
+        if (!m.images) m.images = [];
+        m.images.push(base64Str);
+        m.updatedAt = Date.now();
+        triggerSave();
+        render();
+      }
+    }
+
+    function handleImageFile(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          processImageBase64(e.target.result);
+        };
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function handleMemoPaste(e) {
+      const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+      for (let i = 0; i < items.length; i++) {
+        if (items[i].type.indexOf('image') === 0) {
+          const blob = items[i].getAsFile();
+          const reader = new FileReader();
+          reader.onload = function(event) {
+            processImageBase64(event.target.result);
+          };
+          reader.readAsDataURL(blob);
+          e.preventDefault();
+          break;
+        }
+      }
+    }
+
+    function deleteImage(idx) {
+      const m = getActiveMemo();
+      if (m && m.images) {
+        m.images.splice(idx, 1);
+        m.updatedAt = Date.now();
+        triggerSave();
+        render();
+      }
+    }
+
+    function zoomImage(src) {
+      document.getElementById('lightbox-img').src = src;
+      document.getElementById('lightbox').style.display = 'flex';
+    }
+
+    document.getElementById('nav-works-btn').addEventListener('click', () => {
+      currentTab = 'works'; currentView = 'list'; armedDeleteId = null;
+      document.getElementById('nav-works-btn').className = 'sa-nav-btn active';
+      document.getElementById('nav-memo-btn').className = 'sa-nav-btn';
+      render();
+    });
+    document.getElementById('nav-memo-btn').addEventListener('click', () => {
+      currentTab = 'memo'; currentView = 'list'; armedDeleteId = null;
+      document.getElementById('nav-memo-btn').className = 'sa-nav-btn active';
+      document.getElementById('nav-works-btn').className = 'sa-nav-btn';
+      render();
+    });
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    render();
+  </script>
+</body>
+</html>
