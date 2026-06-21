@@ -1,8 +1,7 @@
-// --- 草紙（SOUSHI）専用：ごちゃごちゃ書き書き（本文長押し挿入版） ---
+// --- 草紙（SOUSHI）専用：ごちゃごちゃ書き書き（ペンボタンモード切り替え版） ---
 (function() {
   const SCRATCH_PREFIX = 'soushi-scratch-';
 
-  // 1. 作品詳細画面の「目標文字数」の下に大きな起動ボタンを作る
   function injectScratchButton() {
     const targetCard = document.querySelector('.sa-target-card');
     if (!targetCard || document.getElementById('sa-scratch-trigger')) return;
@@ -16,7 +15,6 @@
     targetCard.parentNode.insertBefore(launchBtn, targetCard.nextSibling);
   }
 
-  // 2. メイン画面の作成
   function openScratchpad() {
     if (typeof selectedBookId === 'undefined' || !selectedBookId) return;
     const currentBook = state.books.find(x => x.id === selectedBookId);
@@ -86,7 +84,7 @@
 
     // --- エリア全体のラッパー ---
     const mainWrapper = document.createElement('div');
-    mainWrapper.style.cssText = 'flex: 1; display: flex; flex-direction: column; overflow: hidden;';
+    mainWrapper.style.cssText = 'flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;';
 
     const topPanel = document.createElement('div');
     topPanel.id = 'sa-scratch-top-panel';
@@ -99,6 +97,9 @@
     textarea.placeholder = 'ごちゃごちゃ書き書き…';
     textarea.style.cssText = 'flex: 1; background: #111111; color: #E3E3E3; border: none; padding: 20px; font-size: 16px; resize: none; outline: none; line-height: 1.8; font-family: sans-serif;';
     
+    // 🎯 初期状態は「読み取り専用（閲覧モード）」にしておく
+    textarea.readOnly = true;
+
     const savedContent = localStorage.getItem(SCRATCH_PREFIX + selectedBookId) || '';
     textarea.value = savedContent;
 
@@ -137,6 +138,20 @@
 
     mainWrapper.appendChild(topPanel);
     mainWrapper.appendChild(editorContainer);
+
+    // 🎯 📸 スクショ通りの「右下の青い筆（ペン）ボタン」を完全再現
+    const penBtn = document.createElement('button');
+    penBtn.innerHTML = '🖊️'; // 筆・ペンマーク
+    penBtn.style.cssText = 'position: absolute; bottom: 24px; right: 24px; width: 56px; height: 56px; background: #1A54CE; border: none; border-radius: 16px; color: white; font-size: 22px; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; transition: all 0.2s;';
+    
+    penBtn.onclick = () => {
+      // 読み取り専用を解除して、編集モードにする
+      textarea.readOnly = false;
+      textarea.focus(); // 自動でカーソルを当ててキーボードを立ち上げる
+      penBtn.style.display = 'none'; // 編集に入ったらペンボタンは隠す（チェックを押すとまた閲覧に戻る）
+    };
+    
+    mainWrapper.appendChild(penBtn);
     overlay.appendChild(mainWrapper);
 
     // 自動保存
@@ -146,8 +161,12 @@
       setTimeout(() => { docSub.innerHTML = 'すべての変更を保存しました'; }, 600);
     };
 
-    // 画像追加
+    // 画像追加（※編集モードの時だけ有効に）
     fileInput.onchange = (e) => {
+      if (textarea.readOnly) {
+        alert('編集モード（右下のペンボタン）をオンにしてから画像を追加してください。');
+        return;
+      }
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
@@ -159,7 +178,7 @@
       reader.readAsDataURL(file);
     };
 
-    // テンテンテンが押された時（上半分にデータ生成）
+    // テンテンテン（上半分トグル）
     menuBtn.onclick = () => {
       if (topPanel.style.display === 'block') {
         topPanel.style.display = 'none';
@@ -176,25 +195,21 @@
       const listContainer = document.createElement('div');
       listContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
 
-      // 🎯 修正ポイント：長押し時に「本文（content）」を流し込むように変更
       function makeItemElement(titleText, contentText, typeLabel, color) {
         const item = document.createElement('div');
         item.style.cssText = `padding: 10px; background: #262626; border-radius: 4px; border-left: 4px solid ${color}; cursor: pointer; user-select: none; -webkit-user-select: none; display: flex; justify-content: space-between; align-items: center;`;
         
-        // プレビュー用に本文の先頭を少しだけ表示
         const snippet = contentText ? contentText.substring(0, 10).replace(/\n/g, ' ') + '...' : '空っぽのデータ';
         item.innerHTML = `<div><div style="font-size:14px; color:#fff;">${escapeHtml(titleText)}</div><div style="font-size:11px; color:#666; margin-top:2px;">${escapeHtml(snippet)}</div></div><span style="font-size:10px; color:#888;">${typeLabel}</span>`;
 
         let pressTimer;
         const startPress = () => {
+          if (textarea.readOnly) return; // 閲覧モード時は長押し挿入も無効化して安全に
           pressTimer = setTimeout(() => {
             const textToInsert = contentText || '';
             if (textToInsert) {
-              // 題名ではなく、【中身の本文】を一番上に改行付きでガツンと挿入！
               textarea.value = textToInsert + "\n\n" + textarea.value;
               localStorage.setItem(SCRATCH_PREFIX + selectedBookId, textarea.value);
-              
-              // 変更中メッセージ
               docSub.innerHTML = '本文を挿入しました';
               setTimeout(() => { docSub.innerHTML = 'すべての変更を保存しました'; }, 800);
             }
@@ -214,16 +229,13 @@
       }
 
       if (currentBook) {
-        // ① 作品メモ（タイトルとcontentを渡す）
         (currentBook.memos || []).forEach(m => {
           listContainer.appendChild(makeItemElement(m.title || '無題のメモ', m.content || '', '作品メモ', '#B8923D'));
         });
-        // ② 各章（タイトルとcontentを渡す）
         (currentBook.chapters || []).forEach(c => {
           listContainer.appendChild(makeItemElement(c.title || '無題の章', c.content || '', '章', '#9B3A34'));
         });
       }
-      // ③ アプリ全体メモ
       (state.memos || []).forEach(m => {
         listContainer.appendChild(makeItemElement(m.title || '無題のメモ', m.content || '', '全体メモ', '#A69988'));
       });
@@ -245,7 +257,6 @@
     return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  // 画面監視
   const observer = new MutationObserver(() => {
     if (document.querySelector('.sa-target-card')) injectScratchButton();
   });
