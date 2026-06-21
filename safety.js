@@ -88,32 +88,40 @@
     );
   }, true);
 
-  // 2. 「データ保存」ボタンのフック
-  const originalSave = window.saveData || (typeof save === 'function' ? save : null);
-  window.saveDataCustom = function() {
+// 2. 「データ保存」ボタンの完全な乗っ取り
+  // アプリ側が使っている可能性のある関数名（saveData または save）を退避して上書き
+  const originalSave = window.saveData || window.save;
+  const customSaveHandler = function() {
     showCustomPrompt(
       "【データ保存の確認】",
       "現在のアプリデータをファイルとして保存（エクスポート）しますか？",
       null,
       function() {
-        if (originalSave) originalSave();
-        else alert("データを保存しました。");
+        if (typeof originalSave === 'function') originalSave();
+        else if (typeof window.exportToJSON === 'function') window.exportToJSON(); // 予備の保存関数
       }
     );
   };
+  // 両方の可能性に対応して上書き
+  window.saveData = customSaveHandler;
+  window.save = customSaveHandler;
+  window.saveDataCustom = customSaveHandler;
 
-  // 3. 「データ読込」ボタンのフック
-  const originalLoad = window.loadData || (typeof load === 'function' ? load : null);
-  window.loadDataCustom = function() {
+  // 3. 「データ読込」ボタンの完全な乗っ取り
+  const originalLoad = window.loadData || window.load;
+  const customLoadHandler = function() {
     showCustomPrompt(
       "【データ読込の確認】",
       "外部ファイルからデータを読み込みます。現在のデータが上書きされますが、本当によろしいですか？",
       null,
       function() {
-        if (originalLoad) originalLoad();
-        else alert("データを読み込みました。");
+        if (typeof originalLoad === 'function') originalLoad();
+        else if (typeof window.importFromJSON === 'function') window.importFromJSON(); // 予備の読込関数
       }
     );
   };
+  window.loadData = customLoadHandler;
+  window.load = customLoadHandler;
+  window.loadDataCustom = customLoadHandler;
 
 })();
