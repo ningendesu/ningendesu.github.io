@@ -1,119 +1,115 @@
-// --- 草紙（SOUSHI）専用：カスタムダイアログ安全装置（はい/いいえ版） ---
+// --- 草紙（SOUSHI）専用 誤削除防止スクリプト ---
 (function() {
-  
-  // 🎨 完全にオリジナルのダークモード確認画面を作成する関数
-  function showCustomPrompt(title, message, placeholder, onConfirm) {
-    const overlay = document.createElement('div');
-    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100000; display: flex; align-items: center; justify-content: center; font-family: sans-serif; padding: 20px; box-sizing: border-box;';
+  // 元の削除関数を別の名前に退避させておく
+  const originalDeleteBook = window.deleteBook;
+  const originalDeleteChapter = window.deleteChapter;
+  const originalDeleteProjectMemo = window.deleteProjectMemo;
+  const originalDeleteGeneralMemo = window.deleteGeneralMemo;
 
-    const box = document.createElement('div');
-    box.style.cssText = 'background: #252525; border: 1px solid #3d3d3d; width: 100%; max-width: 340px; border-radius: 8px; padding: 20px; box-sizing: border-box; color: #E3E3E3; box-shadow: 0 4px 20px rgba(0,0,0,0.5);';
-
-    const tEl = document.createElement('div');
-    tEl.innerHTML = title;
-    tEl.style.cssText = 'font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #FFF;';
-    
-    const mEl = document.createElement('div');
-    mEl.innerHTML = message.replace(/\n/g, '<br>');
-    mEl.style.cssText = 'font-size: 14px; color: #B3B3B3; line-height: 1.5; margin-bottom: 16px;';
-
-    box.appendChild(tEl);
-    box.appendChild(mEl);
-
-    let inputEl = null;
-    if (placeholder !== null) {
-      inputEl = document.createElement('input');
-      inputEl.type = 'text';
-      inputEl.placeholder = placeholder;
-      inputEl.style.cssText = 'width: 100%; background: #111; border: 1px solid #444; border-radius: 4px; color: #fff; padding: 8px 10px; font-size: 14px; box-sizing: border-box; margin-bottom: 20px; outline: none;';
-      box.appendChild(inputEl);
+  // 1. 作品（本）の削除ボタンが押された時の動きを乗っ取る
+  window.deleteBook = function(id) {
+    if (typeof state !== 'undefined' && state.books) {
+      const book = state.books.find(x => x.id === id);
+      const expectedTitle = (book && book.title) ? book.title : 'タイトル未設定';
+      
+      const userInput = prompt(`【作品削除の確認】\n本当にこの作品を削除しますか？\n削除する場合は、確認のために作品名（ ${expectedTitle} ）を1文字も間違えずに入力してください。`);
+      
+      if (userInput !== expectedTitle) {
+        alert('作品名が一致しません。削除をキャンセルしました。');
+        if (typeof armedDeleteId !== 'undefined') armedDeleteId = null;
+        if (typeof render === 'function') render();
+        return;
+      }
     }
+    // 名前が完全に一致した場合だけ、元の削除処理を実行する
+    if (typeof originalDeleteBook === 'function') originalDeleteBook(id);
+  };
 
-    const btnContainer = document.createElement('div');
-    btnContainer.style.cssText = 'display: flex; justify-content: flex-end; gap: 12px;';
+  // 詳細画面の「この作品を削除する」ボタン用
+  window.deleteBookDirect = function(id) {
+    window.deleteBook(id);
+    if (typeof currentView !== 'undefined') currentView = 'list';
+    if (typeof render === 'function') render();
+  };
 
-    // 🎯 キャンセルボタンを「いいえ」に変更
-    const cancelBtn = document.createElement('button');
-    cancelBtn.innerHTML = 'いいえ';
-    cancelBtn.style.cssText = 'background: none; border: none; color: #3966D6; font-size: 14px; font-weight: bold; cursor: pointer; padding: 8px 12px;';
-    cancelBtn.onclick = () => overlay.remove();
+  // 2. 章の削除ボタンが乗っ取り
+  window.deleteChapter = function(id) {
+    if (typeof state !== 'undefined' && state.books && typeof selectedBookId !== 'undefined') {
+      const book = state.books.find(x => x.id === selectedBookId);
+      const chapter = book ? book.chapters.find(x => x.id === id) : null;
+      const expectedTitle = (chapter && chapter.title) ? chapter.title : '無題の章';
+      
+      const userInput = prompt(`【章削除の確認】\n本当にこの章を削除しますか？\n削除する場合は、確認のために章の題名（ ${expectedTitle} ）を1文字も間違えずに入力してください。`);
+      
+      if (userInput !== expectedTitle) {
+        alert('章の題名が一致しません。削除をキャンセルしました。');
+        if (typeof armedDeleteId !== 'undefined') armedDeleteId = null;
+        if (typeof render === 'function') render();
+        return;
+      }
+    }
+    if (typeof originalDeleteChapter === 'function') originalDeleteChapter(id);
+  };
 
-    // 🎯 OKボタンを「はい」に変更
-    const okBtn = document.createElement('button');
-    okBtn.innerHTML = 'はい';
-    okBtn.style.cssText = 'background: none; border: none; color: #3966D6; font-size: 14px; font-weight: bold; cursor: pointer; padding: 8px 12px;';
-    okBtn.onclick = () => {
-      const val = inputEl ? inputEl.value : true;
-      overlay.remove();
-      onConfirm(val);
-    };
+  window.deleteChapterDirect = function(id) {
+    window.deleteChapter(id);
+    if (typeof currentView !== 'undefined') currentView = 'book';
+    if (typeof render === 'function') render();
+  };
 
-    btnContainer.appendChild(cancelBtn);
-    btnContainer.appendChild(okBtn);
-    box.appendChild(btnContainer);
-    overlay.appendChild(box);
-    document.body.appendChild(overlay);
-
-    if (inputEl) inputEl.focus();
+  // 3. メモ（作品メモ・全体メモ）の削除チェック共通処理
+  function checkMemoTitleMatches(id, isProject) {
+    if (typeof state !== 'undefined') {
+      let memo = null;
+      if (isProject && typeof selectedBookId !== 'undefined') {
+        const book = state.books.find(x => x.id === selectedBookId);
+        memo = book ? book.memos.find(x => x.id === id) : null;
+      } else {
+        memo = state.memos.find(x => x.id === id);
+      }
+      const expectedTitle = (memo && memo.title) ? memo.title : '無題のメモ';
+      
+      const userInput = prompt(`【メモ削除の確認】\n本当にこのメモを削除しますか？\n削除する場合は、確認のためにメモの題名（ ${expectedTitle} ）を1文字も間違えずに入力してください。`);
+      
+      return userInput === expectedTitle;
+    }
+    return true;
   }
 
-  // 1. 各種削除ボタンの横取り
-  document.addEventListener('click', function(e) {
-    const trashBtn = e.target.closest('.fa-trash, .delete-btn, [onClick*="delete"]');
-    if (!trashBtn) return;
-
-    e.preventDefault();
-    e.stopPropagation();
-
-    let title = "削除の確認";
-    let targetName = "対象のデータ";
-
-    const card = trashBtn.closest('.card, .list-item, li, div');
-    if (card) {
-      const titleEl = card.querySelector('.title, h3, h4, span');
-      if (titleEl) targetName = titleEl.innerText.trim();
+  window.deleteProjectMemo = function(id) {
+    if (!checkMemoTitleMatches(id, true)) {
+      alert('メモの題名が一致しません。削除をキャンセルしました。');
+      if (typeof armedDeleteId !== 'undefined') armedDeleteId = null;
+      if (typeof render === 'function') render();
+      return;
     }
-
-    showCustomPrompt(
-      `【${title}】`,
-      `本当にこのデータを削除しますか？\n削除する場合は、確認のために題名（ ${targetName} ）を1文字も間違えずに入力してください。`,
-      `${targetName}`,
-      function(inputValue) {
-        if (inputValue === targetName) {
-          alert("削除が承認されました。");
-        } else {
-          alert("題名が一致しません。削除を中止しました。");
-        }
-      }
-    );
-  }, true);
-
-  // 2. 「データ保存」ボタンのフック
-  const originalSave = window.saveData || (typeof save === 'function' ? save : null);
-  window.saveDataCustom = function() {
-    showCustomPrompt(
-      "【データ保存の確認】",
-      "現在のアプリデータをファイルとして保存（エクスポート）しますか？",
-      null,
-      function() {
-        if (originalSave) originalSave();
-        else alert("データを保存しました。");
-      }
-    );
+    if (typeof originalDeleteProjectMemo === 'function') originalDeleteProjectMemo(id);
   };
 
-  // 3. 「データ読込」ボタンのフック
-  const originalLoad = window.loadData || (typeof load === 'function' ? load : null);
-  window.loadDataCustom = function() {
-    showCustomPrompt(
-      "【データ読込の確認】",
-      "外部ファイルからデータを読み込みます。現在のデータが上書きされますが、本当によろしいですか？",
-      null,
-      function() {
-        if (originalLoad) originalLoad();
-        else alert("データを読み込みました。");
-      }
-    );
+  window.deleteGeneralMemo = function(id) {
+    if (!checkMemoTitleMatches(id, false)) {
+      alert('メモの題名が一致しません。削除をキャンセルしました。');
+      if (typeof armedDeleteId !== 'undefined') armedDeleteId = null;
+      if (typeof render === 'function') render();
+      return;
+    }
+    if (typeof originalDeleteGeneralMemo === 'function') originalDeleteGeneralMemo(id);
   };
 
+  // 詳細画面の「このメモを削除する」ボタン用
+  window.deleteMemoDirect = function() {
+    if (typeof selectedMemoId !== 'undefined' && typeof isEditingProjectMemo !== 'undefined') {
+      const id = selectedMemoId;
+      if (isEditingProjectMemo) {
+        if (!checkMemoTitleMatches(id, true)) { alert('メモの題名が一致しません。削除をキャンセルしました。'); return; }
+        if (typeof originalDeleteProjectMemo === 'function') originalDeleteProjectMemo(id);
+        if (typeof currentView !== 'undefined') currentView = 'book';
+      } else {
+        if (!checkMemoTitleMatches(id, false)) { alert('メモの題名が一致しません。削除をキャンセルしました。'); return; }
+        if (typeof originalDeleteGeneralMemo === 'function') originalDeleteGeneralMemo(id);
+        if (typeof currentView !== 'undefined') currentView = 'list';
+      }
+      if (typeof render === 'function') render();
+    }
+  };
 })();
