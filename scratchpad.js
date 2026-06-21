@@ -1,6 +1,38 @@
-// --- 草紙（SOUSHI）専用：ごちゃごちゃ書き書き（テンテンテンメニュー集約版） ---
+// --- 草紙（SOUSHI）専用：ごちゃごちゃ書き書き（文字数確認もカスタムダイアログ化版） ---
 (function() {
   const SCRATCH_PREFIX = 'soushi-scratch-';
+
+  // 🎨 文字数確認用のオリジナル黒ダイアログ
+  function showCustomAlert(title, message) {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100005; display: flex; align-items: center; justify-content: center; font-family: sans-serif; padding: 20px; box-sizing: border-box;';
+
+    const box = document.createElement('div');
+    box.style.cssText = 'background: #252525; border: 1px solid #3d3d3d; width: 100%; max-width: 320px; border-radius: 8px; padding: 20px; box-sizing: border-box; color: #E3E3E3; box-shadow: 0 4px 20px rgba(0,0,0,0.5);';
+
+    const tEl = document.createElement('div');
+    tEl.innerHTML = title;
+    tEl.style.cssText = 'font-size: 16px; font-weight: bold; margin-bottom: 12px; color: #FFF;';
+    
+    const mEl = document.createElement('div');
+    mEl.innerHTML = message.replace(/\n/g, '<br>');
+    mEl.style.cssText = 'font-size: 14px; color: #B3B3B3; line-height: 1.6; margin-bottom: 20px;';
+
+    const btnContainer = document.createElement('div');
+    btnContainer.style.cssText = 'display: flex; justify-content: flex-end;';
+
+    const okBtn = document.createElement('button');
+    okBtn.innerHTML = '閉じる'; // 閉じるボタン
+    okBtn.style.cssText = 'background: none; border: none; color: #3966D6; font-size: 14px; font-weight: bold; cursor: pointer; padding: 8px 12px;';
+    okBtn.onclick = () => overlay.remove();
+
+    btnContainer.appendChild(okBtn);
+    box.appendChild(tEl);
+    box.appendChild(mEl);
+    box.appendChild(btnContainer);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+  }
 
   function injectScratchButton() {
     const targetCard = document.querySelector('.sa-target-card');
@@ -82,7 +114,7 @@
     header.appendChild(rightGroup);
     overlay.appendChild(header);
 
-    // --- 🔍 ページ内検索バー（初期状態は非表示） ---
+    // --- 🔍 ページ内検索バー ---
     const searchBar = document.createElement('div');
     searchBar.id = 'sa-scratch-search-bar';
     searchBar.style.cssText = 'background: #1A1A1A; padding: 8px 12px; display: none; align-items: center; gap: 8px; border-bottom: 1px solid #2D2D2D;';
@@ -176,18 +208,20 @@
     mainWrapper.appendChild(penBtn);
     overlay.appendChild(mainWrapper);
 
-    // 文字数確認
+    // 🎯 修正ポイント：文字数確認をカスタム黒ダイアログ化
     function checkWordCount() {
       const fullText = textarea.value;
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
       const selectedText = fullText.substring(start, end);
 
-      let message = `【全体の文字数】\n${fullText.length} 文字`;
+      let msg = `全体の文字数： ${fullText.length} 文字`;
       if (selectedText.length > 0) {
-        message += `\n\n【選択範囲の文字数】\n${selectedText.length} 文字`;
+        msg += `\n\n選択した範囲： ${selectedText.length} 文字`;
       }
-      alert(message);
+      
+      // 自作の黒画面に渡す！
+      showCustomAlert("📊 文字数確認", msg);
     }
 
     // 検索ロジック
@@ -196,10 +230,7 @@
     let matchPositions = [];
 
     function doSearch(query) {
-      if (!query) {
-        searchCount.innerHTML = '';
-        return;
-      }
+      if (!query) { searchCount.innerHTML = ''; return; }
       const text = textarea.value;
       if (query !== lastQuery) {
         lastQuery = query;
@@ -211,10 +242,7 @@
         }
         searchIndex = 0;
       }
-      if (matchPositions.length === 0) {
-        searchCount.innerHTML = '0/0';
-        return;
-      }
+      if (matchPositions.length === 0) { searchCount.innerHTML = '0/0'; return; }
       searchCount.innerHTML = `${searchIndex + 1}/${matchPositions.length}`;
       const targetPos = matchPositions[searchIndex];
       textarea.focus();
@@ -227,7 +255,7 @@
     mushroomBtn.onclick = () => { searchInput.value = '🍄'; lastQuery = ''; doSearch('🍄'); };
     starBtn.onclick = () => { searchInput.value = '⭐'; lastQuery = ''; doSearch('⭐'); };
 
-    // --- 📋 テンテンテン：3つのメニューに集約 ---
+    // テンテンテンメニュー
     menuBtn.onclick = () => {
       const oldMenu = document.getElementById('sa-scratch-dropdown');
       if (oldMenu) { oldMenu.remove(); return; }
@@ -246,18 +274,13 @@
       btnInfo.style.cssText = 'background: none; border: none; color: #fff; padding: 12px 16px; font-size: 14px; text-align: left; border-top: 1px solid #3d3d3d; cursor: pointer; white-space: nowrap;';
       btnInfo.onclick = () => { menuBox.remove(); toggleTopPanel(); };
 
-      // 🎯 追加：❸ ページ内検索ボタン
       const btnSearch = document.createElement('button');
       btnSearch.innerHTML = '🔍 ページ内検索';
       btnSearch.style.cssText = 'background: none; border: none; color: #fff; padding: 12px 16px; font-size: 14px; text-align: left; border-top: 1px solid #3d3d3d; cursor: pointer; white-space: nowrap;';
       btnSearch.onclick = () => {
         menuBox.remove();
-        if (searchBar.style.display === 'flex') {
-          searchBar.style.display = 'none';
-        } else {
-          searchBar.style.display = 'flex';
-          searchInput.focus();
-        }
+        if (searchBar.style.display === 'flex') { searchBar.style.display = 'none'; } 
+        else { searchBar.style.display = 'flex'; searchInput.focus(); }
       };
 
       menuBox.appendChild(btnCount);
@@ -332,7 +355,7 @@
     };
 
     fileInput.onchange = (e) => {
-      if (textarea.readOnly) { alert('編集モードにしてから画像を追加してください。'); return; }
+      if (textarea.readOnly) { showCustomAlert('通知', '編集モードにしてから画像を追加してください。'); return; }
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
