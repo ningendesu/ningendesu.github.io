@@ -52,7 +52,7 @@
     const nightBtn = document.getElementById('sa-night-toggle-btn');
     if (!nightBtn) return;
     const isNight = localStorage.getItem(NIGHT_MODE_KEY) === 'true';
-    nightBtn.innerHTML = isNight ? '🌙 ナイトモード 開始' : ' ナイトモード　なしにして';
+    nightBtn.innerHTML = isNight ? '(⁠ ⁠/⁠^⁠ω⁠^⁠)⁠/⁠♪⁠♪ナイトモード　なしにして' : '(⁠｢⁠`⁠･⁠ω⁠･⁠)⁠｢ナイトモード 開始';
   }
 
   // 初期状態の読み込み
