@@ -493,7 +493,7 @@
         container.innerHTML = `
           <div class="sa-field-label">メモタイトル</div>
           <input class="sa-title-input-full" id="memo-title-input" value="${escapeHtml(memo.title)}" placeholder="無題のメモ" oninput="updateMemoTitle(this.value)">
-          <textarea class="sa-editor-area" id="memo-textarea" style="min-height:35vh;" placeholder="自由に書き留めておきましょう… (ここに画像をペースト[Ctrl+V]して貼り付けもできます)" oninput="updateMemoContent(this.value)">${escapeHtml(memo.content)}</textarea>
+          <textarea class="sa-editor-area" id="memo-textarea" style="min-height:35vh;" placeholder="自由に書き留めておきましょう (ここに画像をペースして貼り付けることもできます)" oninput="updateMemoContent(this.value)">${escapeHtml(memo.content)}</textarea>
           
           <div class="sa-image-section">
             <div class="sa-field-label">参考画像・資料</div>
