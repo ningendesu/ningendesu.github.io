@@ -71,7 +71,7 @@
     };
 
     const okBtn = document.createElement('button');
-    okBtn.innerHTML = 'OK';
+    okBtn.innerHTML = 'やるぅうぅぅ！！';
     okBtn.style.cssText = 'background: none; border: none; color: #3966D6; font-size: 14px; font-weight: bold; cursor: pointer; padding: 8px 12px;';
     okBtn.onclick = () => {
       const val = inputEl.value;
